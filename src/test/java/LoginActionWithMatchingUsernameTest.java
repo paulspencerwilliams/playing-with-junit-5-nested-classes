@@ -14,7 +14,6 @@ import static org.mockito.Mockito.when;
 
 class LoginActionWithMatchingUsernameTest {
 
-
     @Nested
     class WithMatchingUsername {
         private Retriever stubbedRetriever;
@@ -30,7 +29,7 @@ class LoginActionWithMatchingUsernameTest {
         class AndNoSuchAlgorithm {
 
             @Test
-            void itThrowsException() throws NoSuchAlgorithmException {
+            void executeThrowsException() throws NoSuchAlgorithmException {
                 Hasher stubbedHasher = mock(Hasher.class);
                 LoginAction sut = new LoginAction(stubbedRetriever, stubbedHasher);
 
@@ -42,27 +41,28 @@ class LoginActionWithMatchingUsernameTest {
 
         @Nested
         class AndMatchingPassword {
-
-
             private Hasher stubbedHasher;
             private LoginAction sut;
+            private LoginResult result;
 
             @BeforeEach
-            void stubbedHasherReturnsMatchingHash() throws NoSuchAlgorithmException {
+            void executeWithMatchingPassword() throws NoSuchAlgorithmException {
                 stubbedHasher = mock(Hasher.class);
                 sut = new LoginAction(stubbedRetriever, stubbedHasher);
 
                 when(stubbedHasher.hash("abc")).thenReturn("retrievedHash");
+
+                result = sut.execute("123", "abc");
             }
 
             @Test
             void itReturnsLoginSuccess() throws NoSuchAlgorithmException {
-                assertThat(sut.execute("123", "abc").getStatus(), equalTo(LoginResult.Status.SUCCESS));
+                assertThat(result.getStatus(), equalTo(LoginResult.Status.SUCCESS));
             }
 
             @Test
             void itReturnsUsername() throws NoSuchAlgorithmException {
-                assertThat(sut.execute("123", "abc").getUsername(), equalTo("123"));
+                assertThat(result.getUsername(), equalTo("123"));
             }
         }
 
@@ -70,23 +70,26 @@ class LoginActionWithMatchingUsernameTest {
         class AndMismatchingPassword {
             private Hasher hasher;
             private LoginAction sut;
+            private LoginResult result;
 
             @BeforeEach
-            void stubbedHasherReturnsMismatchedHash() throws NoSuchAlgorithmException {
+            void executeWithMismatchedPassword() throws NoSuchAlgorithmException {
                 hasher = mock(Hasher.class);
                 sut = new LoginAction(stubbedRetriever, hasher);
 
                 when(hasher.hash("abc")).thenReturn("notRetrievedHash");
+
+                result = sut.execute("123", "abc");
             }
 
             @Test
             void itReturnsBadCredentials() throws NoSuchAlgorithmException {
-                assertThat(sut.execute("123", "abc").getStatus(), equalTo(LoginResult.Status.BAD_CREDENTIALS));
+                assertThat(result.getStatus(), equalTo(LoginResult.Status.BAD_CREDENTIALS));
             }
 
             @Test
             void itReturnsNullUsername() throws NoSuchAlgorithmException {
-                assertThat(sut.execute("123", "abc").getUsername(), nullValue());
+                assertThat(result.getUsername(), nullValue());
             }
         }
     }
@@ -95,25 +98,26 @@ class LoginActionWithMatchingUsernameTest {
     class WithNonMatchingUsername {
         private Retriever stubbedRetriever;
         private LoginAction sut;
+        private LoginResult result;
 
         @BeforeEach
-        void stubbedRetrieverReturnsMatchingUser() {
+        void executeWithNonMatchingUsername() throws NoSuchAlgorithmException {
             stubbedRetriever = mock(Retriever.class);
             sut = new LoginAction(stubbedRetriever, null);
 
             when(stubbedRetriever.retrieve("123")).thenReturn(new RetrievalResult(RetrievalResult.Status.INVALID_USERNAME));
+
+            result = sut.execute("123", "abc");
         }
 
         @Test
         void itReturnsBadCredentials() throws NoSuchAlgorithmException {
-            assertThat(sut.execute("123", "abc").getStatus(), equalTo(LoginResult.Status.BAD_CREDENTIALS));
+            assertThat(result.getStatus(), equalTo(LoginResult.Status.BAD_CREDENTIALS));
         }
 
         @Test
         void itReturnsNullUsername() throws NoSuchAlgorithmException {
-            assertThat(sut.execute("123", "abc").getUsername(), nullValue());
+            assertThat(result.getUsername(), nullValue());
         }
-
     }
-
 }
